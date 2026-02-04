@@ -3,7 +3,7 @@ version: '3.8'
 services:
 
   postgres:
-    image: postgres:15
+    image: ankane/pgvector:latest   # ✅ changed from postgres:15
     container_name: nms-postgres
     environment:
       POSTGRES_DB: nmsdb
@@ -49,8 +49,8 @@ services:
     image: rnwood/smtp4dev:latest
     container_name: smtp4dev
     ports:
-      - "3000:80"   # Web UI
-      - "2525:25"   # SMTP Server
+      - "3000:80"
+      - "2525:25"
     restart: unless-stopped
 
   nms-app:

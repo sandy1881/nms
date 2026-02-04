@@ -30,8 +30,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Skip login endpoint
-        if (request.getServletPath().equals("/auth/login")) {
+        String path = request.getServletPath();
+
+        // 🔥 SKIP LOGIN ENDPOINT
+        if (path.equals("/auth/login")) {
             filterChain.doFilter(request, response);
             return;
         }
