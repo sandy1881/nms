@@ -6,6 +6,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+
 @Service
 public class EmailService {
 
@@ -27,7 +29,7 @@ public class EmailService {
             helper.setFrom(fromEmail);
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(body, false); // false = plain text
+            helper.setText(body, false);
 
             mailSender.send(message);
         } catch (Exception e) {
@@ -35,7 +37,7 @@ public class EmailService {
         }
     }
 
-    // ✅ Send HTML formatted email (for AI reports)
+    // ✅ Send HTML formatted email
     public void sendHtmlMail(String to, String subject, String htmlBody) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -44,11 +46,31 @@ public class EmailService {
             helper.setFrom(fromEmail);
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(htmlBody, true); // true = HTML
+            helper.setText(htmlBody, true);
 
             mailSender.send(message);
         } catch (Exception e) {
             throw new RuntimeException("Failed to send HTML email", e);
+        }
+    }
+
+    // ✅ NEW: Send email with PDF attachment
+    public void sendMailWithAttachment(String to, String subject, String body, String filePath) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(body, false);
+
+            File file = new File(filePath);
+            helper.addAttachment(file.getName(), file);
+
+            mailSender.send(message);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send email with attachment", e);
         }
     }
 }

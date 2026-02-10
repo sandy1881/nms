@@ -24,7 +24,7 @@ public class NmsChatService {
     @Value("${ollama.chat.model}")
     private String model;
 
-    public String ask(String question) {
+    public String askQuestion(String question) {
 
         // 🔹 STEP 1: Load all knowledge from DB (current RAG setup)
         List<String> knowledge = vectorSearchService.getAllKnowledge()

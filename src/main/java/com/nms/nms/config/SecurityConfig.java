@@ -41,8 +41,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/ai/**").authenticated()      // 🔥 AI needs JWT
-                        .requestMatchers("/api/**").authenticated()     // 🔥 APIs need JWT
+                        .requestMatchers("/ai/**").authenticated()
+                        .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->
