@@ -77,6 +77,17 @@ services:
       SPRING_MAIL_PASSWORD: dummy
     restart: unless-stopped
 
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    depends_on:
+      - ollama
+    ports:
+      - "3001:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   ollama_data:
