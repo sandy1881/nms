@@ -16,7 +16,6 @@ public class OpenAICompatController {
     private final NmsChatService chatService;
     private final PdfGeneratorService pdfService;
 
-    // Model listing for OpenWebUI dropdown
     @GetMapping("/models")
     public Map<String, Object> models() {
         return Map.of(
@@ -41,15 +40,12 @@ public class OpenAICompatController {
 
         String msg = userMessage == null ? "" : userMessage.toLowerCase();
 
-        // 🔴 Intercept BEFORE LLM: trigger PDF on 'pdf' or 'report'
+        // 🔴 PDF trigger
         if (msg.contains("pdf") || msg.contains("report")) {
 
-            // Get latest KPI explanation text from your existing AI flow
             String reportText = chatService.askQuestion("Show latest KPIs");
 
-            // Generate PDF from that text
-            byte[] pdfBytes = pdfService.generatePdf(reportText);
-            String base64Pdf = pdfService.toBase64(pdfBytes);
+            pdfService.generatePdfAndSave(reportText);
 
             return Map.of(
                     "id", "chatcmpl-pdf",
@@ -60,23 +56,15 @@ public class OpenAICompatController {
                                     "finish_reason", "stop",
                                     "message", Map.of(
                                             "role", "assistant",
-                                            "content", "PDF generated from latest KPI report.",
-                                            // IMPORTANT: OpenWebUI expects files inside message.files
-                                            "files", List.of(
-                                                    Map.of(
-                                                            "type", "file",
-                                                            "name", "kpi-report.pdf",
-                                                            "mime_type", "application/pdf",
-                                                            "data", base64Pdf
-                                                    )
-                                            )
+                                            "content",
+                                            "PDF generated successfully.\n\nDownload here:\nhttp://localhost:8080/download/kpi"
                                     )
                             )
                     )
             );
         }
 
-        // Normal AI chat flow
+        // Normal AI flow
         String aiResponse = chatService.askQuestion(userMessage);
 
         return Map.of(

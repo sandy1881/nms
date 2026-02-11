@@ -5,34 +5,27 @@ import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.pdf.PdfWriter;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
-import java.util.Base64;
+import java.io.FileOutputStream;
 
 @Service
 public class PdfGeneratorService {
 
-    public byte[] generatePdf(String content) {
+    public void generatePdfAndSave(String content) {
         try {
-            System.out.println("PDF GENERATION STARTED");
+            String path = "/tmp/kpi-report.pdf";
 
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
             Document document = new Document();
-            PdfWriter.getInstance(document, out);
+            PdfWriter.getInstance(document, new FileOutputStream(path));
 
             document.open();
             document.add(new Paragraph(content));
             document.close();
 
-            System.out.println("PDF GENERATED SUCCESSFULLY");
-            return out.toByteArray();
+            System.out.println("PDF SAVED AT: " + path);
 
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("PDF generation failed", e);
         }
-    }
-
-    public String toBase64(byte[] data) {
-        return Base64.getEncoder().encodeToString(data);
     }
 }
