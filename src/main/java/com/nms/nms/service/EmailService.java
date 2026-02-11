@@ -5,8 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-
-import java.io.File;
+import org.springframework.core.io.FileSystemResource;   // 👈 ADD THIS IMPORT
 
 @Service
 public class EmailService {
@@ -54,7 +53,7 @@ public class EmailService {
         }
     }
 
-    // ✅ NEW: Send email with PDF attachment
+    // 🆕 Send email with PDF attachment (used by AI)
     public void sendMailWithAttachment(String to, String subject, String body, String filePath) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -65,8 +64,8 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(body, false);
 
-            File file = new File(filePath);
-            helper.addAttachment(file.getName(), file);
+            FileSystemResource file = new FileSystemResource(new java.io.File(filePath));
+            helper.addAttachment("kpi-report.pdf", file);
 
             mailSender.send(message);
         } catch (Exception e) {

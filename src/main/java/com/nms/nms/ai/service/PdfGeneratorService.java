@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 @Service
 public class PdfGeneratorService {
 
+    // Generates the PDF and saves it to /tmp so it can be downloaded & emailed
     public void generatePdfAndSave(String content) {
         try {
             String path = "/tmp/kpi-report.pdf";
@@ -22,7 +23,6 @@ public class PdfGeneratorService {
             document.close();
 
             System.out.println("PDF SAVED AT: " + path);
-
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("PDF generation failed", e);
