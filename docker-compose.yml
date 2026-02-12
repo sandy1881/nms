@@ -87,8 +87,11 @@ services:
     environment:
       - OPENAI_API_BASE_URL=http://nms-app:8080/v1
       - OPENAI_API_KEY=dummy
+    volumes:
+      - openwebui_data:/app/backend/data   # ⭐ THIS LINE RETAINS CHATS
     restart: unless-stopped
 
 volumes:
   postgres_data:
   ollama_data:
+  openwebui_data:

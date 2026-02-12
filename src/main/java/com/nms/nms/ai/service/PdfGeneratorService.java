@@ -10,10 +10,18 @@ import java.io.FileOutputStream;
 @Service
 public class PdfGeneratorService {
 
-    // Generates the PDF and saves it to /tmp so it can be downloaded & emailed
-    public void generatePdfAndSave(String content) {
+    private String lastGeneratedFileName = "kpi-report.pdf";
+
+    public String generatePdfAndSave(String content, String fileNameHint) {
         try {
-            String path = "/tmp/kpi-report.pdf";
+            String safeName = fileNameHint
+                    .toLowerCase()
+                    .replaceAll("[^a-z0-9 ]", "")
+                    .replaceAll("\\s+", "-");
+
+            lastGeneratedFileName = safeName + "-report.pdf";
+
+            String path = "/tmp/" + lastGeneratedFileName;
 
             Document document = new Document();
             PdfWriter.getInstance(document, new FileOutputStream(path));
@@ -23,9 +31,16 @@ public class PdfGeneratorService {
             document.close();
 
             System.out.println("PDF SAVED AT: " + path);
+
+            return lastGeneratedFileName;
+
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("PDF generation failed", e);
         }
+    }
+
+    public String getLastGeneratedFileName() {
+        return lastGeneratedFileName;
     }
 }

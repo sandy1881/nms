@@ -20,6 +20,9 @@ public class OpenAICompatController {
     private final PdfGeneratorService pdfService;
     private final EmailService emailService;
 
+    // Stores last meaningful AI response (used for "above chat")
+    private String lastMeaningfulAnswer = "";
+
     @GetMapping("/models")
     public Map<String, Object> models() {
         return Map.of(
@@ -40,67 +43,100 @@ public class OpenAICompatController {
                 (List<Map<String, String>>) request.get("messages");
 
         String userMessage = messages.get(messages.size() - 1).get("content");
-        System.out.println("USER MESSAGE RECEIVED = " + userMessage);
-
         String msg = userMessage == null ? "" : userMessage.toLowerCase();
 
-        // 📧 EMAIL TRIGGER: e.g., "send this pdf to abc@mail.com"
+        System.out.println("USER MESSAGE RECEIVED = " + userMessage);
+
+        // =========================
+        // 📧 EMAIL REQUEST
+        // Example:
+        // "send mail of above chat to abc@mail.com"
+        // =========================
         if (msg.contains("send") && msg.contains("@")) {
+
             String email = extractEmail(userMessage);
 
             if (email != null) {
+
+                // If no previous chat exists, generate fallback content
+                if (lastMeaningfulAnswer == null || lastMeaningfulAnswer.isEmpty()) {
+                    lastMeaningfulAnswer = chatService.askQuestion("Show latest KPIs");
+                }
+
+                // Generate PDF from last chat
+                pdfService.generatePdfAndSave(lastMeaningfulAnswer, "ai-report");
+
                 emailService.sendMailWithAttachment(
                         email,
-                        "NMS KPI Report",
-                        "Attached is your KPI PDF report.",
-                        "/tmp/kpi-report.pdf"
+                        "NMS AI Report",
+                        lastMeaningfulAnswer,
+                        "/tmp/" + pdfService.getLastGeneratedFileName()
                 );
 
-                return Map.of(
-                        "id", "chatcmpl-mail",
-                        "object", "chat.completion",
-                        "choices", List.of(
-                                Map.of(
-                                        "index", 0,
-                                        "finish_reason", "stop",
-                                        "message", Map.of(
-                                                "role", "assistant",
-                                                "content", "Email sent successfully to " + email
-                                        )
-                                )
-                        )
-                );
+                return response("Email sent successfully to " + email);
             }
         }
 
-        // 📄 PDF TRIGGER: e.g., "generate pdf for latest kpis"
-        if (msg.contains("pdf") || msg.contains("report")) {
+        // =========================
+        // 📄 PDF REQUEST (SMART LOGIC)
+        // =========================
+        if (msg.contains("pdf")) {
 
-            String reportText = chatService.askQuestion("Show latest KPIs");
-            pdfService.generatePdfAndSave(reportText);
+            String contentForPdf;
 
-            return Map.of(
-                    "id", "chatcmpl-pdf",
-                    "object", "chat.completion",
-                    "choices", List.of(
-                            Map.of(
-                                    "index", 0,
-                                    "finish_reason", "stop",
-                                    "message", Map.of(
-                                            "role", "assistant",
-                                            "content",
-                                            "PDF generated successfully.\n\nDownload here:\nhttp://localhost:8080/download/kpi"
-                                    )
-                            )
-                    )
+            // Case 1: User says "above chat"
+            if (msg.contains("above") || msg.contains("previous")) {
+                contentForPdf = lastMeaningfulAnswer;
+            }
+            // Case 2: Direct request
+            // "generate pdf for last 10 health metrics"
+            else if (msg.contains("generate pdf for")) {
+                contentForPdf = chatService.askQuestion(userMessage);
+                lastMeaningfulAnswer = contentForPdf;
+            }
+            // Case 3: Fallback to last response
+            else if (lastMeaningfulAnswer != null && !lastMeaningfulAnswer.isEmpty()) {
+                contentForPdf = lastMeaningfulAnswer;
+            }
+            // Case 4: Final fallback
+            else {
+                contentForPdf = chatService.askQuestion("Show latest KPIs");
+                lastMeaningfulAnswer = contentForPdf;
+            }
+
+            String fileName =
+                    pdfService.generatePdfAndSave(contentForPdf, userMessage);
+
+
+            return response(
+                    "PDF generated successfully.\n\nDownload here:\n["
+                            + fileName + "](http://localhost:8080/download/" + fileName + ")"
             );
+
+
+
         }
 
-        // Normal AI flow
+        // =========================
+        // 🧠 NORMAL AI CHAT
+        // =========================
         String aiResponse = chatService.askQuestion(userMessage);
 
+        // Save only meaningful AI answers
+        if (!msg.contains("follow-up") &&
+                !msg.contains("suggest") &&
+                !msg.contains("json")) {
+
+            lastMeaningfulAnswer = aiResponse;
+        }
+
+        return response(aiResponse);
+    }
+
+    // Standard OpenAI-style response
+    private Map<String, Object> response(String text) {
         return Map.of(
-                "id", "chatcmpl-text",
+                "id", "chatcmpl",
                 "object", "chat.completion",
                 "choices", List.of(
                         Map.of(
@@ -108,20 +144,18 @@ public class OpenAICompatController {
                                 "finish_reason", "stop",
                                 "message", Map.of(
                                         "role", "assistant",
-                                        "content", aiResponse
+                                        "content", text
                                 )
                         )
                 )
         );
     }
 
-    // Helper to extract email from any sentence
+    // Extract email from text
     private String extractEmail(String text) {
         Pattern pattern = Pattern.compile("[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+");
         Matcher matcher = pattern.matcher(text);
-        if (matcher.find()) {
-            return matcher.group();
-        }
+        if (matcher.find()) return matcher.group();
         return null;
     }
 }

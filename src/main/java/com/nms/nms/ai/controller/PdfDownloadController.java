@@ -10,13 +10,18 @@ import java.io.File;
 @RequestMapping("/download")
 public class PdfDownloadController {
 
-    @GetMapping("/kpi")
-    public ResponseEntity<FileSystemResource> download() {
+    @GetMapping("/{fileName:.+}")
+    public ResponseEntity<FileSystemResource> download(@PathVariable String fileName) {
 
-        File file = new File("/tmp/kpi-report.pdf");
+        File file = new File("/tmp/" + fileName);
+
+        if (!file.exists()) {
+            return ResponseEntity.notFound().build();
+        }
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=kpi-report.pdf")
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + fileName + "\"")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(new FileSystemResource(file));
     }
